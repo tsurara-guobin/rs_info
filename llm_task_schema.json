@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LLM Iteration Task Plan",
+  "type": "object",
+  "properties": {
+    "taskPlanAndProgress": {
+      "description": "任务计划和进度",
+      "type": "object",
+      "patternProperties": {
+        "^Step[0-9]+(\\.[0-9]+)*$": {
+          "$ref": "#/definitions/taskStep"
+        }
+      }
+    },
+    "currentTask": {
+      "description": "当前任务（步骤ID，例如 Step1）",
+      "type": "string"
+    },
+    "currentTaskStatus": {
+      "description": "当前任务状态（已完成、未开始、进行中）",
+      "type": "string",
+      "enum": ["已完成", "未开始", "进行中"]
+    },
+    "currentTaskInput": {
+      "description": "当前任务输入（可为字符串、对象或数组）",
+      "$ref": "#/definitions/dataPayload"
+    },
+    "currentTaskOutput": {
+      "description": "当前任务输出（可为字符串、对象或数组）",
+      "$ref": "#/definitions/dataPayload"
+    },
+    "currentTaskNeedUserInfo": {
+      "description": "当前任务需要用户补充的信息",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "nextTask": {
+      "description": "下个任务（步骤ID）",
+      "type": "string"
+    },
+    "totalTaskOutput": {
+      "description": "总任务输出（可为字符串、对象或数组）",
+      "$ref": "#/definitions/totalTaskOutput"
+    },
+    "totalTaskStatus": {
+      "description": "总任务状态",
+      "type": "object",
+      "properties": {
+        "completed": {
+          "description": "是否完成",
+          "type": "boolean"
+        },
+        "incompleteReason": {
+          "description": "未完成原因",
+          "type": "string"
+        }
+      },
+      "required": ["completed"]
+    }
+  },
+  "required": [
+    "taskPlanAndProgress",
+    "currentTask",
+    "currentTaskStatus",
+    "totalTaskStatus"
+  ],
+  "definitions": {
+    "dataPayload": {
+      "description": "通用数据载荷类型：可为字符串、对象或数组",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "object" },
+        { "type": "array" }
+      ]
+    },
+    "taskStep": {
+      "type": "object",
+      "properties": {
+        "taskName": {
+          "description": "任务名称",
+          "type": "string"
+        },
+        "status": {
+          "description": "任务状态（已完成、未开始、进行中）",
+          "type": "string",
+          "enum": ["已完成", "未开始", "进行中"]
+        },
+        "prerequisiteSteps": {
+          "description": "任务需要前序步骤结果的步骤名（可选）",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^Step[0-9]+(\\.[0-9]+)*$"}
+        },
+        "subTaskPlanAndProgress": {
+          "description": "子任务计划和进度（没有子任务时可不包括）",
+          "type": "object",
+          "patternProperties": {
+            "^Step[0-9]+(\\.[0-9]+)*$": {
+              "$ref": "#/definitions/taskStep"
+            }
+          }
+        }
+      },
+      "required": ["taskName", "status"]
+    }
+  }
+}
