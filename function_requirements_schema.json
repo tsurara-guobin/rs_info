@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/functional-requirements.schema.json",
+  "title": "Functional Requirements Specification",
+  "type": "object",
+  "required": ["product", "version", "requirements"],
+  "properties": {
+    "product": { "type": "string", "description": "产品/软件名称（与上位规格保持一致）" },
+    "version": { "type": "string", "description": "本文档版本号" },
+    "metadata": {
+      "type": "object",
+      "description": "文档元信息",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "authors": { "type": "array", "items": { "type": "string" } },
+        "scope": { "type": "string", "description": "本章节适用的范围说明（对应 SRS 3/9.6.3）" }
+      },
+      "additionalProperties": false
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/FunctionalRequirement" }
+    }
+  },
+  "$defs": {
+    "FunctionalRequirement": {
+      "type": "object",
+      "required": ["id", "title", "description", "inputs", "processing", "outputs", "traceability"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(FR|REQ)-[0-9]+$",
+          "description": "唯一标识（如 FR-001）"
+        },
+        "title": { "type": "string", "description": "功能名称（简要）" },
+        "description": {
+          "type": "string",
+          "description": "功能性需求的规范性表述（“系统应能……”），覆盖目标、边界与预期行为（SRS 9.6.12）"
+        },
+
+        "triggers": {
+          "type": "array",
+          "description": "触发条件（事件/用户动作/定时/状态变化等）",
+          "items": {
+            "type": "object",
+            "required": ["type", "detail"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["user_action", "event", "schedule", "api_call", "state_change", "other"]
+              },
+              "detail": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+
+        "preconditions": {
+          "type": "array",
+          "description": "前置条件（必须满足的状态/数据/权限）",
+          "items": { "type": "string" }
+        },
+
+        "inputs": {
+          "type": "array",
+          "minItems": 0,
+          "description": "输入（含限制/有效性检查/格式/范围）",
+          "items": { "$ref": "#/$defs/IOItem" }
+        },
+
+        "processing": {
+          "type": "object",
+          "description": "处理逻辑/业务规则/分支与异常路径（SRS 9.6.12 功能行为）",
+          "required": ["logic"],
+          "properties": {
+            "logic": { "type": "string", "description": "核心处理逻辑（可用结构化伪码/状态机/规则描述）" },
+            "businessRules": {
+              "type": "array",
+              "description": "引用的业务规则或上位文档条目",
+              "items": { "$ref": "#/$defs/Reference" }
+            },
+            "branches": {
+              "type": "array",
+              "description": "条件分支（例如正常/异常/边界路径）",
+              "items": {
+                "type": "object",
+                "required": ["condition", "effect"],
+                "properties": {
+                  "condition": { "type": "string", "description": "分支触发条件" },
+                  "steps": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "该分支下的关键步骤（可选）"
+                  },
+                  "effect": { "type": "string", "description": "对系统状态/输出的影响" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "exceptions": {
+              "type": "array",
+              "description": "异常处理（通信失败、溢出、硬件故障、错误恢复等）",
+              "items": { "type": "string" }
+            },
+            "postconditions": {
+              "type": "array",
+              "description": "后置条件（完成后系统应满足的状态/不变式）",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        },
+
+        "outputs": {
+          "type": "array",
+          "minItems": 0,
+          "description": "输出（含限制/格式/精度/输入到输出的转换关系/序列）",
+          "items": { "$ref": "#/$defs/IOItem" }
+        },
+
+        "stateDependencies": {
+          "type": "array",
+          "description": "状态依赖（在哪些模式/状态允许或禁止）",
+          "items": {
+            "type": "object",
+            "required": ["state", "availability"],
+            "properties": {
+              "state": { "type": "string" },
+              "availability": { "type": "string", "enum": ["allowed", "blocked"] },
+              "note": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+
+        "constraints": {
+          "type": "object",
+          "description": "设计/实现约束与质量属性（与 SRS 9.6.16/9.6.18 协同）",
+          "properties": {
+            "performance": {
+              "type": "object",
+              "description": "性能/容量指标（响应时间、吞吐、并发、Pxx 等）",
+              "properties": {
+                "responseTimeMs": { "type": "number" },
+                "throughputPerSec": { "type": "number" },
+                "concurrency": { "type": "integer" },
+                "latencyPercentile": {
+                  "type": "object",
+                  "properties": {
+                    "percentile": { "type": "number", "minimum": 0, "maximum": 100 },
+                    "maxLatencyMs": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "capacity": { "type": "string", "description": "容量/数据规模约束" },
+            "security": { "type": "string", "description": "安全/权限/合规约束（可引用标准）" },
+            "reliability": { "type": "string", "description": "可用性/容错/恢复目标" },
+            "other": { "type": "string", "description": "其他约束（硬件/OS/网络/法规等）" }
+          },
+          "additionalProperties": false
+        },
+
+        "externalInterfaces": {
+          "type": "array",
+          "description": "外部接口（对应 SRS 9.6.11）",
+          "items": { "$ref": "#/$defs/InterfaceRef" }
+        },
+
+        "priority": {
+          "type": "string",
+          "enum": ["MUST", "SHOULD", "COULD", "WONT"],
+          "description": "优先级（MoSCoW）"
+        },
+
+        "risk": {
+          "type": "array",
+          "description": "与该功能相关的主要风险/假设",
+          "items": { "type": "string" }
+        },
+
+        "traceability": {
+          "$ref": "#/$defs/Traceability"
+        },
+
+        "verification": {
+          "type": "object",
+          "description": "验证方法与判定准则（与 9.6.19 保持并行）",
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["inspection", "analysis", "demonstration", "test"],
+              "description": "验证手段"
+            },
+            "criteria": { "type": "string", "description": "通过/失败标准（可量化）" },
+            "data": { "type": "string", "description": "所需数据/治具/环境" }
+          },
+          "additionalProperties": false
+        },
+
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "implemented", "verified", "rejected"],
+          "description": "需求状态（生命周期）"
+        },
+
+        "notes": { "type": "string", "description": "补充说明" }
+      },
+      "additionalProperties": false
+    },
+
+    "IOItem": {
+      "type": "object",
+      "required": ["name", "direction"],
+      "properties": {
+        "name": { "type": "string", "description": "输入/输出项名称" },
+        "direction": { "type": "string", "enum": ["in", "out"] },
+        "actorOrSystem": {
+          "type": "string",
+          "description": "来源/去向（用户/外部系统/设备/数据库等）"
+        },
+        "dataType": {
+          "type": ["string", "object", "array"],
+          "description": "数据类型或结构（可用 JSON Schema 片段）"
+        },
+        "format": { "type": "string", "description": "编码/格式/单位（如 ISO8601、UTF‑8、mm）" },
+        "constraints": {
+          "type": "object",
+          "description": "有效性规则/范围/必填/枚举值等",
+          "properties": {
+            "required": { "type": "boolean" },
+            "validation": { "type": "string" },
+            "range": { "type": "string" },
+            "enum": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "mapping": {
+          "type": "string",
+          "description": "输入到输出的映射/转换公式或序列说明（如 y=f(x)）"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Reference": {
+      "type": "object",
+      "required": ["refId"],
+      "properties": {
+        "refId": { "type": "string", "description": "被引用规则/文档条目 ID" },
+        "title": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+
+    "InterfaceRef": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string", "description": "接口名称" },
+        "type": {
+          "type": "string",
+          "enum": ["ui", "api", "message", "file", "hardware", "other"]
+        },
+        "direction": { "type": "string", "enum": ["inbound", "outbound", "bidirectional"] },
+        "protocol": { "type": "string", "description": "协议/介质（HTTP, MQTT, RS‑485 等）" },
+        "specRef": { "$ref": "#/$defs/Reference" }
+      },
+      "additionalProperties": false
+    },
+
+    "Traceability": {
+      "type": "object",
+      "description": "需求可追踪性（向上/向下）",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "description": "上游需求（BRS/StRS/SyRS等）",
+          "items": { "$ref": "#/$defs/Reference" }
+        },
+        "design": {
+          "type": "array",
+          "description": "设计要素（模块/接口/数据模型等）",
+          "items": { "$ref": "#/$defs/Reference" }
+        },
+        "tests": {
+          "type": "array",
+          "description": "关联测试资产",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string", "description": "测试用例/集/需求覆盖 ID" },
+              "type": {
+                "type": "string",
+                "enum": ["unit", "integration", "system", "acceptance"]
+              },
+              "method": {
+                "type": "string",
+                "enum": ["inspection", "analysis", "demonstration", "test"]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
