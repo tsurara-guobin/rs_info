@@ -30,13 +30,13 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^(FR|REQ)-[0-9]+$",
-          "description": "唯一标识（如 FR-001）"
+          "description": "唯一标识；支持分层编号（如 FR-1.2.3）",
+          "pattern": "^(FR|REQ)-[0-9]+(\\.[0-9]+)*$"
         },
         "title": { "type": "string", "description": "功能名称（简要）" },
         "description": {
           "type": "string",
-          "description": "功能性需求的规范性表述（“系统应能……”），覆盖目标、边界与预期行为（SRS 9.6.12）"
+          "description": "功能性需求的规范性表述（“系统应能……”），覆盖目标、边界与预期行为（SRS 9.6.10/9.6.12）"
         },
 
         "triggers": {
@@ -182,9 +182,7 @@
           "items": { "type": "string" }
         },
 
-        "traceability": {
-          "$ref": "#/$defs/Traceability"
-        },
+        "traceability": { "$ref": "#/$defs/Traceability" },
 
         "verification": {
           "type": "object",
@@ -207,7 +205,53 @@
           "description": "需求状态（生命周期）"
         },
 
-        "notes": { "type": "string", "description": "补充说明" }
+        "notes": { "type": "string", "description": "补充说明" },
+
+        "hierarchy": {
+          "type": "object",
+          "description": "父子/谱系关系与分摊、分配信息（支持多父、多子）",
+          "properties": {
+            "parents": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/RelLink" },
+              "description": "本条需求的父需求链接（来源于上层/被本条分解或派生的依据）"
+            },
+            "children": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/RelLink" },
+              "description": "由本条需求分解/派生/分摊得到的子需求链接"
+            },
+            "levelOfAbstraction": {
+              "type": "string",
+              "enum": ["business", "stakeholder", "system", "software", "component"],
+              "description": "该需求所处抽象层级（便于递归分解与跟踪）"
+            },
+            "apportionedFrom": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/RelLink" },
+              "description": "若本需求由总体指标分摊而来，指向被分摊的上位需求（SRS 9.6.9）"
+            }
+          },
+          "additionalProperties": false
+        },
+
+        "allocation": {
+          "type": "array",
+          "description": "把本需求分配到的系统要素/构件（与架构/设计对应）",
+          "items": {
+            "type": "object",
+            "required": ["targetId", "targetType"],
+            "properties": {
+              "targetId": { "type": "string", "description": "被分配的系统要素ID/名称" },
+              "targetType": {
+                "type": "string",
+                "enum": ["subsystem", "service", "component", "hardware", "software", "interface"]
+              },
+              "rationale": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
       },
       "additionalProperties": false
     },
@@ -226,7 +270,7 @@
           "type": ["string", "object", "array"],
           "description": "数据类型或结构（可用 JSON Schema 片段）"
         },
-        "format": { "type": "string", "description": "编码/格式/单位（如 ISO8601、UTF‑8、mm）" },
+        "format": { "type": "string", "description": "编码/格式/单位（如 ISO8601、UTF-8、mm）" },
         "constraints": {
           "type": "object",
           "description": "有效性规则/范围/必填/枚举值等",
@@ -267,8 +311,23 @@
           "enum": ["ui", "api", "message", "file", "hardware", "other"]
         },
         "direction": { "type": "string", "enum": ["inbound", "outbound", "bidirectional"] },
-        "protocol": { "type": "string", "description": "协议/介质（HTTP, MQTT, RS‑485 等）" },
+        "protocol": { "type": "string", "description": "协议/介质（HTTP, MQTT, RS-485 等）" },
         "specRef": { "$ref": "#/$defs/Reference" }
+      },
+      "additionalProperties": false
+    },
+
+    "RelLink": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "description": "关联的另一条需求ID（可跨文档）" },
+        "type": {
+          "type": "string",
+          "enum": ["derives", "decomposes", "apportions", "refines", "satisfies"]
+        },
+        "rationale": { "type": "string", "description": "建立该关系的理由/依据（分析、权衡、标准条款等）" },
+        "evidence": { "$ref": "#/$defs/Reference", "description": "支撑证据（权衡报告、建模、仿真、评审结论）" }
       },
       "additionalProperties": false
     },
@@ -313,3 +372,4 @@
   },
   "additionalProperties": false
 }
+
